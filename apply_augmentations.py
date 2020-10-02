@@ -1,12 +1,16 @@
 import numpy as np
 import cv2
+import tkinter.filedialog
 import os
 import sys
 import time
 import argparse
 
-IMPLEMENTED_OPERATIONS = ["rotate", "abs_tint", "tint", "flip"]
+_DEFINE_USE_TKINTER = False
+
+IMPLEMENTED_OPERATIONS = ["rotate", "abs_tint", "tint", "flip", "blur", "noise"]
 DEFAULT_ROTATION_DEGREES = 15
+DEFAULT_BLUR_KSIZE = 3
 
 def parse_args():
 	parser = argparse.ArgumentParser()
@@ -113,6 +117,7 @@ def apply_rotate(image_path, params):
 		degrees = int(params[0])
 	except IndexError:
 		degrees = DEFAULT_ROTATION_DEGREES
+		params.append(str(degrees))
 
 	image_center = tuple(np.array([height, width]) / 2)
 	rotation_matrix = cv2.getRotationMatrix2D(image_center, degrees, 1.0)
@@ -130,6 +135,33 @@ def apply_rotate(image_path, params):
 
 	print("Applied ROTATE %s degrees on %s" % (degrees, image_path))
 	return new_image
+
+def apply_blur(image_path, params):
+	try:
+		k_size = int(params[0])
+		if k_size % 2 == 0:
+			k_size -= 1
+			params[0] = str(k_size)	# Update the params to generate a correct output name
+	except IndexError:
+		print("Got blur without intensity parameter, defaulting to 3")
+		k_size = DEFAULT_BLUR_KSIZE
+		params.append(str(k_size))	# Update the params to generate a correct output name
+	new_image = cv2.imread(image_path)
+
+	cv2.GaussianBlur(new_image, (k_size, k_size), 0, dst=new_image)
+	return new_image
+
+def apply_noise(image_path, params):
+	new_image = cv2.imread(image_path)
+
+	height, width, depth = new_image.shape
+	noise_array = np.random.uniform(low=0.7, high=1, size=(height, width, depth))
+
+	aux_image = new_image * noise_array
+	new_image = aux_image.astype("uint8")
+
+	return new_image
+
 
 def apply_flip(image_path, params):
 	new_image = cv2.imread(image_path)
@@ -172,8 +204,12 @@ def apply_augment(input_image_path, augment):
 		new_image = apply_tint(input_image_path, augment["params"], use_absolute_values=True)
 	elif augment["operation"] == "tint":
 		new_image = apply_tint(input_image_path, augment["params"], use_absolute_values=False)
-	elif augment["operation"] == "mirror":
+	elif augment["operation"] == "flip":
 		new_image = apply_flip(input_image_path, augment["params"])
+	elif augment["operation"] == "blur":
+		new_image = apply_blur(input_image_path, augment["params"])
+	elif augment["operation"] == "noise":
+		new_image = apply_noise(input_image_path, augment["params"])
 	return new_image
 
 def apply_augments(input_directory, augments, output_directory="Output"):
@@ -193,7 +229,8 @@ def apply_augments(input_directory, augments, output_directory="Output"):
 		for augment in augments:
 			new_image = apply_augment(image_path, augment)
 
-			new_image_name = image_basename_no_extension + "_" + augment["operation"] + "-" + "-".join(augment["params"]) + "_" + str(augment_index) + "." + image_extension
+			new_image_name = image_basename_no_extension + "_" + augment["operation"] + \
+			  ("-" + "-".join(augment["params"]) if len(augment["params"]) > 0 else "") + "_" + str(augment_index) + "." + image_extension
 			new_image_path = str(os.path.join(output_directory,new_image_name))
 
 			print("\tWriting augmentation to %s" % (new_image_path))
@@ -201,11 +238,21 @@ def apply_augments(input_directory, augments, output_directory="Output"):
 			augment_index += 1
 
 def main():
-	args = parse_args()
+	config_file_path = None
+	input_dir_path = None
 
-	augments = get_augmentations_from_file(args.config_file_path)
+	if _DEFINE_USE_TKINTER:
+		config_file_path = tkinter.filedialog.askopenfilename(title="CONFIG FILE")
+		input_dir_path = tkinter.filedialog.askdirectory(title="INPUT DIRECTORY")
+	else:
+		args = parse_args()
+		config_file_path = args.config_file_path
+		input_dir_path = args.input_dir_path
 
-	apply_augments(args.input_dir_path, augments)
+	augments = get_augmentations_from_file(config_file_path)
+	apply_augments(input_dir_path, augments)
+
 
 if __name__ == '__main__':
 	main()
+
