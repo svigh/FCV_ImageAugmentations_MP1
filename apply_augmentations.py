@@ -227,7 +227,7 @@ def apply_noise(image_path, params):
 
 	# Avoid overflow
 	aux_image = new_image * noise_array
-	new_image = aux_image.astype("uint8")
+	np.clip(aux_image, 0, 255, out=new_image)
 
 	return new_image
 
@@ -246,7 +246,7 @@ def apply_brighten(image_path, params):
 		params.append(str(intensity))
 
 	aux_image = new_image * intensity
-	new_image = aux_image.astype("uint8")
+	np.clip(aux_image, 0, 255, out=new_image)
 
 	return new_image
 
