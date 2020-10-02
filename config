@@ -1,11 +1,13 @@
-#Rotate -15
-
-Tint blue0
-Tint greenasd0
-abs_Tint red0
-#Rotate 22
-#
-#asd Rotate 123
+# Remove # from the augments to apply them
+Rotate 15
+#Rotate_crop 15
+#rotate_keep_size 15
+#rotate_resize 15
+#Tint Blue100
+#abs_Tint red0
 #flip vertical
 #flip horizontal
-#flip horizontal vertical
+#brighten 0.5
+#brighten 1.1
+#blur 20
+#noise 2
