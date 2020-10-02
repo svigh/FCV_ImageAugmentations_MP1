@@ -1,10 +1,11 @@
 # Remove # from the augments to apply them
-Rotate 15
+#Rotate 15
 #Rotate_crop 15
 #rotate_keep_size 15
 #rotate_resize 15
 #Tint Blue100
 #abs_Tint red0
+#rescale 1024 1024
 #flip vertical
 #flip horizontal
 #brighten 0.5

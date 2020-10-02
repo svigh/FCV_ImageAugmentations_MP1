@@ -15,6 +15,9 @@ DEFAULT_BLUR_KSIZE = 3
 DEFAULT_LOWER_NOISE_LIMIT = 0.7
 DEFAULT_UPPER_NOISE_LIMIT = 1
 DEFAULT_BRIGHTNESS_INTENSITY = 1.5
+DEFAULT_RESCALE_WIDTH = 256
+DEFAULT_RESCALE_HEIGHT= 256
+
 class ROTATION_MODES(Enum):
 	KEEP_ORIGINAL_SIZE = 1
 	KEEP_CORNERS = 2
@@ -119,6 +122,7 @@ def apply_rotate(image_path, params, crop_type=ROTATION_MODES.KEEP_ORIGINAL_SIZE
 	new_image = cv2.imread(image_path)
 	height, width = new_image.shape[1::-1]
 
+	# Get the params set
 	try:
 		degrees = int(params[0])
 	except IndexError:
@@ -127,6 +131,9 @@ def apply_rotate(image_path, params, crop_type=ROTATION_MODES.KEEP_ORIGINAL_SIZE
 
 	image_center = tuple(np.array([height, width]) / 2)
 	rotation_matrix = cv2.getRotationMatrix2D(image_center, degrees, 1.0)
+
+	# Good calculator that explains stuff
+	# https://www.calculator.net/right-triangle-calculator.html
 
 	if crop_type == ROTATION_MODES.KEEP_ORIGINAL_SIZE:
 		bound_w, bound_h = height, width
@@ -156,11 +163,32 @@ def apply_rotate(image_path, params, crop_type=ROTATION_MODES.KEEP_ORIGINAL_SIZE
 
 	return new_image
 
+def apply_rescale(image_path, params):
+	new_image = cv2.imread(image_path)
+	height, width = 0, 0
+
+	# Get the params set
+	try:
+		width = int(params[0])
+	except IndexError:
+		width = DEFAULT_RESCALE_WIDTH
+		params.append(str(width))
+	try:
+		height = int(params[1])
+	except IndexError:
+		height = DEFAULT_RESCALE_HEIGHT
+		params.append(str(height))
+
+	new_image = cv2.resize(new_image, (width, height))
+
+	return new_image
+
 # Blur the image with a gausian kernel of size k (bigger kernel for fuzzier result)
 def apply_blur(image_path, params):
 	new_image = cv2.imread(image_path)
 	k_size = 0
 
+	# Get the params set
 	try:
 		k_size = int(params[0])
 		if k_size % 2 == 0:
@@ -179,12 +207,12 @@ def apply_noise(image_path, params):
 	new_image = cv2.imread(image_path)
 	height, width, depth = new_image.shape
 
+	# Get the params set
 	try:
 		lower_noise_limit = float(params[0])
 	except IndexError:
 		lower_noise_limit = DEFAULT_LOWER_NOISE_LIMIT
 		params.append(str(lower_noise_limit))
-
 	try:
 		upper_noise_limit = float(params[1])
 	except IndexError:
@@ -210,6 +238,7 @@ def apply_brighten(image_path, params):
 	new_image = cv2.imread(image_path)
 	intensity = 0.0
 
+	# Get the params set
 	try:
 		intensity = float(params[0])
 	except IndexError:
@@ -225,6 +254,10 @@ def apply_brighten(image_path, params):
 def apply_flip(image_path, params):
 	new_image = cv2.imread(image_path)
 	axis = []
+
+	# Get the params set
+	if len(params) == 0:
+		params.append("horizontal")
 
 	for flip_axis in params:
 		if flip_axis.lower() == "vertical":
@@ -264,6 +297,7 @@ def apply_augment(input_image_path, augment):
 		"rotate_resize" : lambda image_path, params : apply_rotate(image_path, params, crop_type=ROTATION_MODES.KEEP_CORNERS),
 		"tint" : apply_tint,
 		"abs_tint" : lambda image_path, params : apply_tint(image_path, params, use_absolute_values=True),
+		"rescale" : apply_rescale,
 		"flip" : apply_flip,
 		"blur" : apply_blur,
 		"noise" : apply_noise,
