@@ -140,8 +140,8 @@ def apply_rotate(image_path, params, crop_type=ROTATION_MODES.KEEP_ORIGINAL_SIZE
 		# so that the corners dont get cut
 		abs_cos = abs(rotation_matrix[0][0])
 		abs_sin = abs(rotation_matrix[0][1])
-		bound_w = int(height * abs_sin + width * abs_cos)
-		bound_h = int(height * abs_cos + width * abs_sin)
+		bound_h = int(height * abs_sin + width * abs_cos)
+		bound_w = int(height * abs_cos + width * abs_sin)
 	elif crop_type == ROTATION_MODES.CROP_INWARD:	# TODO: find direct formula for bounding box
 		# Get the bounding box so that the height and width of the
 		# original image are the hypothenuse of each corner triangle
@@ -149,10 +149,10 @@ def apply_rotate(image_path, params, crop_type=ROTATION_MODES.KEEP_ORIGINAL_SIZE
 		# box around the image
 		abs_cos = abs(rotation_matrix[0][0])
 		abs_sin = abs(rotation_matrix[0][1])
-		bound_w = int(height * abs_sin + width * abs_cos)
-		bound_h = int(height * abs_cos + width * abs_sin)
-		bound_w -= int(height * abs_sin) * 2
-		bound_h -= int(width * abs_sin) * 2
+		bound_h = int(height * abs_sin + width * abs_cos)
+		bound_w = int(height * abs_cos + width * abs_sin)
+		bound_w -= int(width * abs_sin) * 2
+		bound_h -= int(height * abs_sin) * 2
 
 	rotation_matrix[0][2] += bound_w/2 - image_center[0]
 	rotation_matrix[1][2] += bound_h/2 - image_center[1]
