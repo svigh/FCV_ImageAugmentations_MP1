@@ -8,8 +8,6 @@ import argparse
 import math
 from enum import Enum
 
-_DEFINE_USE_TKINTER = False
-
 DEFAULT_ROTATION_DEGREES = 15
 DEFAULT_BLUR_KSIZE = 3
 DEFAULT_LOWER_NOISE_LIMIT = 0.7
@@ -26,9 +24,9 @@ class ROTATION_MODES(Enum):
 
 def parse_args():
 	parser = argparse.ArgumentParser()
-	parser.add_argument("--input_dir", dest="input_dir_path", action="store", required=True,
+	parser.add_argument("--input_dir", dest="input_dir_path", action="store",
 		help="The input directory that contains all the images to be augmented")
-	parser.add_argument("--config_file", dest="config_file_path", action="store", required=True,
+	parser.add_argument("--config_file", dest="config_file_path", action="store",
 		help="The input config file that contains the augmentations to be added")
 
 	args = parser.parse_args()
@@ -344,20 +342,23 @@ def apply_augments(input_directory, augments, output_directory="Output"):
 			augment_index += 1
 
 def main():
+	args = parse_args()
+
 	config_file_path = None
 	input_dir_path = None
 
-	if _DEFINE_USE_TKINTER:
-		config_file_path = tkinter.filedialog.askopenfilename(title="CONFIG FILE")
-		input_dir_path = tkinter.filedialog.askdirectory(title="INPUT DIRECTORY")
-	else:
-		args = parse_args()
+	if args.config_file_path is not None:
 		config_file_path = args.config_file_path
+	else:
+		config_file_path = tkinter.filedialog.askopenfilename(title="CONFIG FILE")
+
+	if args.input_dir_path is not None:
 		input_dir_path = args.input_dir_path
+	else:
+		input_dir_path = tkinter.filedialog.askdirectory(title="INPUT DIRECTORY")
 
 	augments = get_augmentations_from_file(config_file_path)
 	apply_augments(input_dir_path, augments)
-
 
 if __name__ == '__main__':
 	main()
