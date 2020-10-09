@@ -328,26 +328,27 @@ def apply_augments(input_directory, augments, output_directory="Output"):
 
 		print("\nAugmenting image %s" % (image_path))
 		for augment_chain in augments:
-			new_image = cv2.imread(image_path)
-			try:
-				for augment in augment_chain:
-					new_image = apply_augment(new_image, augment)
-			except KeyError:	# In case the augment is not in the augments dictionary
-				continue
+			if len(augment_chain):
+				new_image = cv2.imread(image_path)
+				try:
+					for augment in augment_chain:
+						new_image = apply_augment(new_image, augment)
+				except KeyError:	# In case the augment is not in the augments dictionary
+					continue
 
-			# For each augmentations chain (which is a list of dictionaries)
-			# we get each dicts operation and params (if they exist) and create the string
-			new_image_name = image_basename_no_extension + \
-							"_" + ("---".join([augment["operation"] + \
-								("-" + "-".join(augment["params"]) if len(augment["params"]) > 0 else "")
-							for augment in augment_chain])) + \
-							"_" + str(augment_index) + "." + image_extension
+				# For each augmentations chain (which is a list of dictionaries)
+				# we get each dicts operation and params (if they exist) and create the string
+				new_image_name = image_basename_no_extension + \
+								"_" + ("---".join([augment["operation"] + \
+									("-" + "-".join(augment["params"]) if len(augment["params"]) > 0 else "")
+								for augment in augment_chain])) + \
+								"_" + str(augment_index) + "." + image_extension
 
-			new_image_path = str(os.path.join(output_directory,new_image_name))
+				new_image_path = str(os.path.join(output_directory,new_image_name))
 
-			print("\tWriting %s augmentation to %s" % (augment["operation"], new_image_path))
-			cv2.imwrite(new_image_path, new_image)
-			augment_index += 1
+				print("\tWriting %s augmentation to %s" % (augment["operation"], new_image_path))
+				cv2.imwrite(new_image_path, new_image)
+				augment_index += 1
 
 def main():
 	args = parse_args()
