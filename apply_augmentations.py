@@ -326,7 +326,6 @@ def apply_augments(input_directory, augments, output_directory="Output"):
 		image_path = os.path.join(input_directory, image)
 		image_basename_no_extension, image_extension = image.split(".")
 
-		# For each
 		print("\nAugmenting image %s" % (image_path))
 		for augment_chain in augments:
 			new_image = cv2.imread(image_path)
