@@ -40,20 +40,21 @@ def get_augmentations_from_file(config_file):
 	try:
 		with open(config_file, "r") as config:
 			for line in config:
-					augments_chain = []
-					for inline_operation in line.split(";"):
-						line_contents_list = inline_operation.split()
-						# If line is empty skip it
-						if not line_contents_list:
-							continue
+				augments_chain = []
+				for inline_operation in line.split(";"):
+					line_contents_list = inline_operation.split()
+					# If line is empty skip it
+					if not line_contents_list:
+						continue
 
-						operation = line_contents_list[0].lower()
-						params = [ param.lower() for param in line_contents_list[1:] ]
+					operation = line_contents_list[0].lower()
+					params = [ param.lower() for param in line_contents_list[1:] ]
 
-						operation_dict = {}
-						operation_dict["operation"] = operation
-						operation_dict["params"] = params
-						augments_chain.append(operation_dict)
+					operation_dict = {}
+					operation_dict["operation"] = operation
+					operation_dict["params"] = params
+					augments_chain.append(operation_dict)
+				if len(augments_chain) > 0:
 					augments.append(augments_chain)
 	except FileNotFoundError as e:
 		print("Error at reading config file %s\n" % (config_file), str(e))
