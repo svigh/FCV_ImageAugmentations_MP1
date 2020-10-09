@@ -1,4 +1,6 @@
 # Remove # from the augments to apply them
+
+# Single augmentations
 #Rotate 15
 #Rotate_crop 15
 #rotate_keep_size 15
@@ -12,3 +14,8 @@
 #brighten 1.1
 #blur 20
 #noise 2
+
+# Chain augmentations
+#noise 2; rotate_resize 10; tint red100
+#tint red100;rotate_resize 10; flip horizontal
+#blur 20; noise 1.1;rescale 512 512

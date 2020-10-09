@@ -34,30 +34,33 @@ def parse_args():
 
 def get_augmentations_from_file(config_file):
 	augments = []
-	# Create a list of dictionaries:
-	# [ {operation: operationName0: params: [param0, param1]},
-	#	{operation: operationName1: params: [param0]},.. ]
+	# Create a list of lists of dictionaries:
+	# [ [{operation: operationName0: params: [param0, param1]},
+	#	{operation: operationName1: params: [param0]},.. ], [..., ...] ]
 	try:
 		with open(config_file, "r") as config:
 			for line in config:
-				line_contents_list = line.split()
-				# If line is empty skip it
-				if not line_contents_list:
-					continue
+					augments_chain = []
+					for inline_operation in line.split(";"):
+						line_contents_list = inline_operation.split()
+						# If line is empty skip it
+						if not line_contents_list:
+							continue
 
-				operation = line_contents_list[0].lower()
-				params = [ param.lower() for param in line_contents_list[1:] ]
+						operation = line_contents_list[0].lower()
+						params = [ param.lower() for param in line_contents_list[1:] ]
 
-				operation_dict = {}
-				operation_dict["operation"] = operation
-				operation_dict["params"] = params
-				augments.append(operation_dict)
+						operation_dict = {}
+						operation_dict["operation"] = operation
+						operation_dict["params"] = params
+						augments_chain.append(operation_dict)
+					augments.append(augments_chain)
 	except FileNotFoundError as e:
 		print("Error at reading config file %s\n" % (config_file), str(e))
 	return augments
 
-def apply_tint(image_path, params, use_absolute_values=False):
-	new_image = cv2.imread(image_path)
+def apply_tint(image, params, use_absolute_values=False):
+	new_image = image
 	height, width = new_image.shape[1::-1]
 	channels = []
 
@@ -116,8 +119,8 @@ def apply_tint(image_path, params, use_absolute_values=False):
 	return new_image
 
 # Rotate the image with crop or no crop
-def apply_rotate(image_path, params, crop_type=ROTATION_MODES.KEEP_ORIGINAL_SIZE):
-	new_image = cv2.imread(image_path)
+def apply_rotate(image, params, crop_type=ROTATION_MODES.KEEP_ORIGINAL_SIZE):
+	new_image = image
 	height, width = new_image.shape[1::-1]
 
 	# Get the params set
@@ -161,8 +164,8 @@ def apply_rotate(image_path, params, crop_type=ROTATION_MODES.KEEP_ORIGINAL_SIZE
 
 	return new_image
 
-def apply_rescale(image_path, params):
-	new_image = cv2.imread(image_path)
+def apply_rescale(image, params):
+	new_image = image
 	height, width = 0, 0
 
 	# Get the params set
@@ -182,8 +185,8 @@ def apply_rescale(image_path, params):
 	return new_image
 
 # Blur the image with a gausian kernel of size k (bigger kernel for fuzzier result)
-def apply_blur(image_path, params):
-	new_image = cv2.imread(image_path)
+def apply_blur(image, params):
+	new_image = image
 	k_size = 0
 
 	# Get the params set
@@ -201,8 +204,8 @@ def apply_blur(image_path, params):
 	return new_image
 
 # Multiply each channel of each pixel with a random amount
-def apply_noise(image_path, params):
-	new_image = cv2.imread(image_path)
+def apply_noise(image, params):
+	new_image = image
 	height, width, depth = new_image.shape
 
 	# Get the params set
@@ -232,8 +235,8 @@ def apply_noise(image_path, params):
 # TODO: maximum amount of brightness for each pixel
 # should be when any channel reaches 255
 # Multiply each channel with intensity
-def apply_brighten(image_path, params):
-	new_image = cv2.imread(image_path)
+def apply_brighten(image, params):
+	new_image = image
 	intensity = 0.0
 
 	# Get the params set
@@ -249,8 +252,8 @@ def apply_brighten(image_path, params):
 	return new_image
 
 # Flips the image on vertical or horizontal axis
-def apply_flip(image_path, params):
-	new_image = cv2.imread(image_path)
+def apply_flip(image, params):
+	new_image = image
 	axis = []
 
 	# Get the params set
@@ -286,15 +289,15 @@ def create_output_dir(output_directory):
 			print(str(e))
 			exit(1)
 
-def apply_augment(input_image_path, augment):
+def apply_augment(image, augment):
 	# Organizing the functions corresponding to each augment string
 	augments_dictionary = {
 		"rotate" : apply_rotate,
-		"rotate_crop" : lambda image_path, params : apply_rotate(image_path, params, crop_type=ROTATION_MODES.CROP_INWARD),
-		"rotate_keep_size" : lambda image_path, params : apply_rotate(image_path, params, crop_type=ROTATION_MODES.KEEP_ORIGINAL_SIZE),
-		"rotate_resize" : lambda image_path, params : apply_rotate(image_path, params, crop_type=ROTATION_MODES.KEEP_CORNERS),
+		"rotate_crop" : lambda image, params : apply_rotate(image, params, crop_type=ROTATION_MODES.CROP_INWARD),
+		"rotate_keep_size" : lambda image, params : apply_rotate(image, params, crop_type=ROTATION_MODES.KEEP_ORIGINAL_SIZE),
+		"rotate_resize" : lambda image, params : apply_rotate(image, params, crop_type=ROTATION_MODES.KEEP_CORNERS),
 		"tint" : apply_tint,
-		"abs_tint" : lambda image_path, params : apply_tint(image_path, params, use_absolute_values=True),
+		"abs_tint" : lambda image, params : apply_tint(image, params, use_absolute_values=True),
 		"rescale" : apply_rescale,
 		"flip" : apply_flip,
 		"blur" : apply_blur,
@@ -303,7 +306,7 @@ def apply_augment(input_image_path, augment):
 	}
 
 	try:
-		new_image = augments_dictionary[augment["operation"]](input_image_path, augment["params"])
+		new_image = augments_dictionary[augment["operation"]](image, augment["params"])
 	except KeyError:
 		print("Operation %s not implemented, skipping..." % (augment["operation"]))
 		raise
@@ -323,17 +326,23 @@ def apply_augments(input_directory, augments, output_directory="Output"):
 		image_path = os.path.join(input_directory, image)
 		image_basename_no_extension, image_extension = image.split(".")
 
+		# For each
 		print("\nAugmenting image %s" % (image_path))
-		for augment in augments:
+		for augment_chain in augments:
+			new_image = cv2.imread(image_path)
 			try:
-				new_image = apply_augment(image_path, augment)
+				for augment in augment_chain:
+					new_image = apply_augment(new_image, augment)
 			except KeyError:	# In case the augment is not in the augments dictionary
 				continue
 
+			# For each augmentations chain (which is a list of dictionaries)
+			# we get each dicts operation and params (if they exist) and create the string
 			new_image_name = image_basename_no_extension + \
-							  "_" + augment["operation"] + \
-							  ("-" + "-".join(augment["params"]) if len(augment["params"]) > 0 else "") + \
-							  "_" + str(augment_index) + "." + image_extension
+							"_" + ("---".join([augment["operation"] + \
+								("-" + "-".join(augment["params"]) if len(augment["params"]) > 0 else "")
+							for augment in augment_chain])) + \
+							"_" + str(augment_index) + "." + image_extension
 
 			new_image_path = str(os.path.join(output_directory,new_image_name))
 
@@ -358,6 +367,10 @@ def main():
 		input_dir_path = tkinter.filedialog.askdirectory(title="INPUT DIRECTORY")
 
 	augments = get_augmentations_from_file(config_file_path)
+	for line in augments:
+		print(line)
+
+	# sys.exit(0)
 	apply_augments(input_dir_path, augments)
 
 if __name__ == '__main__':
